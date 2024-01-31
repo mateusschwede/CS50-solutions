@@ -1,11 +1,13 @@
-import csv, sys
-from util import Node, StackFrontier, QueueFrontier
+import csv
+import sys
+from util import Node, QueueFrontier
 
 names = {}
 people = {}
 movies = {}
 
-def load_csv(dir):
+
+def load_data(dir):
     with open(f"{dir}/people.csv", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -37,29 +39,30 @@ def load_csv(dir):
             except KeyError:
                 pass
 
+
 def main():
     if len(sys.argv) > 2:
         sys.exit("Usage: python degrees.py [dir]")
     dir = sys.argv[1] if len(sys.argv) == 2 else "large"
 
     print("Data: loading")
-    load_csv(dir)
+    load_data(dir)
     print("Data: loaded")
 
     source = person_id_for_name(input("Name: "))
     if source is None:
-        sys.exit("Person not found")
+        sys.exit("Person not found.")
     target = person_id_for_name(input("Name: "))
     if target is None:
-        sys.exit("Person not found")
+        sys.exit("Person not found.")
 
     path = shortest_path(source, target)
 
     if path is None:
-        print("Not connection!")
+        print("Not connected!")
     else:
         degrees = len(path)
-        print(f"{degrees} degrees of separation")
+        print(f"{degrees} degrees of separation.")
         path = [(None, source)] + path
         for i in range(degrees):
             person1 = people[path[i][1]]["name"]
@@ -69,41 +72,45 @@ def main():
 
 
 def shortest_path(source, target):
-    num_explored = 0
-    start = Node(state=source, parent=None, action=None)
+    start = Node(source, None, None)
     frontier = QueueFrontier()
     frontier.add(start)
     explored = set()
 
     while True:
+        if len(explored) % 100 == 0:
+            print('Actors explored: ', len(explored))
+            print('Nodes left: ', len(frontier.frontier))
+
         if frontier.empty():
+            print('Frontier is empty: No connection between actors')
+            print(len(explored), 'No solution found')
             return None
 
-        node = frontier.remove()
-        num_explored += 1
+        curr_node = frontier.remove()
+        explored.add(curr_node.state)
 
-        explored.add(node.state)
-        neighbors = neighbors_for_person(node.state)
-        
-        for movie, actor in neighbors:
-            if actor not in explored and not frontier.contains_state(actor):
-                child = Node(state=actor, parent=node, action=movie)
-                
-                if child.state == target:
-                    path = []
-                    node = child
-                    while node.parent is not None:
-                        path.append((node.action, node.state))
-                        node = node.parent
+        for action, state in neighbors_for_person(curr_node.state):
 
-                    path.reverse()
-                    return path
-                frontier.add(child)
+            if state == target:
+                print('Solution Found')
+                print(len(explored), 'Find solution')
+                path = []
+                path.append((action, state))
+
+                while curr_node.parent != None:
+                    path.append((curr_node.action, curr_node.state))
+                    curr_node = curr_node.parent
+                path.reverse()
+                return path
+
+            if not frontier.contains_state(state) and state not in explored:
+                new_node = Node(state, curr_node, action)
+                frontier.add(new_node)
 
 
 def person_id_for_name(name):
     person_ids = list(names.get(name.lower(), set()))
-    
     if len(person_ids) == 0:
         return None
     elif len(person_ids) > 1:
@@ -123,14 +130,15 @@ def person_id_for_name(name):
     else:
         return person_ids[0]
 
+
 def neighbors_for_person(person_id):
     movie_ids = people[person_id]["movies"]
     neighbors = set()
-    
     for movie_id in movie_ids:
         for person_id in movies[movie_id]["stars"]:
             neighbors.add((movie_id, person_id))
     return neighbors
+
 
 if __name__ == "__main__":
     main()

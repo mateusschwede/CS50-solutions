@@ -4,6 +4,7 @@ class Node():
         self.parent = parent
         self.action = action
 
+
 class StackFrontier():
     def __init__(self):
         self.frontier = []
@@ -19,16 +20,17 @@ class StackFrontier():
 
     def remove(self):
         if self.empty():
-            raise Exception("empty")
+            raise Exception("empty frontier")
         else:
             node = self.frontier[-1]
             self.frontier = self.frontier[:-1]
             return node
 
+
 class QueueFrontier(StackFrontier):
     def remove(self):
         if self.empty():
-            raise Exception("empty")
+            raise Exception("empty frontier")
         else:
             node = self.frontier[0]
             self.frontier = self.frontier[1:]
